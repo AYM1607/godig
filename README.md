@@ -1,13 +1,27 @@
 # Godig
 A simple tunneling service to expose local services publicly.
 
+## Architecture
+
+```
+┌────────────┐       ┌────────────┐       ┌────────────┐
+│            │Bearer │            │API Key│            │
+│   Client   │──────▶│   Server   │◀─────▶│  Service   │
+│            │       │            │       │            │
+└────────────┘       └────────────┘       └────────────┘
+     │                      │                      │
+     │                      │                      │
+     ▼                      ▼                      ▼
+Bearer Auth            Domain Routing     Exposes local http
+```
+
 ## Core features
 - L7 tunneling
 - Domain based routing
 - Service requests id which is also their subdomain
-- Token based auth between Server and Service
-- Bearer authorization between clients and server
-- Service generates bearer tokens, Server generates Service tokens
+- API key (pre-shared) based auth between Server and Service
+- Bearer authorization between Clients and Server
+- Service generates bearer tokens on initial connection
 - SSE streaming support
 
 ## Philosophy
