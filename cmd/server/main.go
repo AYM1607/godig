@@ -164,6 +164,12 @@ func (ts *TunnelServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	token := getBearerToken(r)
+	if token != client.Bearer {
+		http.Error(w, "Auth failed", http.StatusBadGateway)
+		return
+	}
+
 	stream, err := client.Session.Open()
 	if err != nil {
 		log.Printf("Failed to open stream for %s: %v", tunnelID, err)
@@ -259,4 +265,19 @@ func getHost() string {
 		host = "localhost"
 	}
 	return host
+}
+
+func getBearerToken(r *http.Request) string {
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		return ""
+	}
+
+	// Check if it starts with "Bearer "
+	if !strings.HasPrefix(authHeader, "Bearer ") {
+		return ""
+	}
+
+	// Extract the token part
+	return strings.TrimPrefix(authHeader, "Bearer ")
 }
