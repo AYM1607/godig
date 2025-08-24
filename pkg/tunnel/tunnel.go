@@ -9,6 +9,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/yamux"
@@ -38,6 +39,9 @@ func NewTunnelClient(serverAddr, localAddr, apiKey string) *TunnelClient {
 	if err != nil {
 		panic(err)
 	}
+
+	// Some clients automatically convert to lowercase.
+	id = strings.ToLower(id)
 
 	return &TunnelClient{
 		Bearer:   bearer,
