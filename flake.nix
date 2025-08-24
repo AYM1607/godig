@@ -22,6 +22,8 @@
             go
             gotools
             gopls
+
+            flyctl
           ];
         };
       }

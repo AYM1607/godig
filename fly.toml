@@ -1,0 +1,31 @@
+# fly.toml app configuration file generated for godig on 2025-08-23T20:21:41-07:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'godig'
+primary_region = 'sea'
+
+[build]
+  dockerfile = 'dockerfiles/server/Dockerfile'
+
+[deploy]
+  strategy = 'immediate'
+
+[env]
+  GODIG_HOST = 'godig.xyz'
+
+[http_service]
+  internal_port = 8081
+  force_https = true
+  processes = ['app']
+
+[[services]]
+  protocol = 'tcp'
+  internal_port = 8080
+  [[services.ports]]
+    port = 8080
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '256mb'
