@@ -21,7 +21,10 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	client := tunnel.NewTunnelClient(*serverAddr, *localAddr, key)
+	client, err := tunnel.NewTunnelClient(*serverAddr, *localAddr, key)
+	if err != nil {
+		log.Fatalln("Failed to create tunnel client:", err)
+	}
 
 	log.Printf("Starting tunnel client...")
 	log.Printf("Tunnel ID: %s", client.TunnelID)
