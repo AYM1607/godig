@@ -178,9 +178,8 @@ func (ts *TunnelServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	defer stream.Close()
 
-	// TODO: This might break long SSE.
-	// Set timeout for the stream
-	stream.SetDeadline(time.Now().Add(30 * time.Second))
+	// Must be renewed for long running connections.
+	stream.SetDeadline(time.Now().Add(60 * time.Second))
 
 	// Forward the HTTP request to the client
 	if err := r.Write(stream); err != nil {
@@ -189,7 +188,7 @@ func (ts *TunnelServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Read the HTTP response from the client
+	// Read the HTTP response from the client.
 	resp, err := http.ReadResponse(bufio.NewReader(stream), r)
 	if err != nil {
 		log.Printf("Failed to read response from stream: %v", err)
@@ -198,7 +197,7 @@ func (ts *TunnelServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	// Get client IP for proxy headers
+	// Get client IP for proxy headers.
 	clientIP, _, _ := net.SplitHostPort(r.RemoteAddr)
 	if clientIP == "" {
 		clientIP = r.RemoteAddr
@@ -220,7 +219,7 @@ func (ts *TunnelServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if isStreamingResponse(resp) {
 		log.Printf("Handling streaming response for %s", tunnelID)
-		if err := ts.handleStreamingResponse(w, resp); err != nil {
+		if err := ts.handleStreamingResponse(w, resp, stream); err != nil {
 			log.Printf("Error handling streaming response: %v", err)
 		}
 	} else {

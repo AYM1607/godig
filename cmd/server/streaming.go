@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -18,7 +19,7 @@ func isStreamingResponse(resp *http.Response) bool {
 
 // handleStreamingResponse sends keep-alive comments on top of the regular
 // content to prevent connections from being closed.
-func (ts *TunnelServer) handleStreamingResponse(w http.ResponseWriter, resp *http.Response) error {
+func (ts *TunnelServer) handleStreamingResponse(w http.ResponseWriter, resp *http.Response, stream net.Conn) error {
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		return fmt.Errorf("response writer doesn't support flushing")
@@ -64,7 +65,12 @@ func (ts *TunnelServer) handleStreamingResponse(w http.ResponseWriter, resp *htt
 			// Send SSE keepalive comment (ignored by browsers but keeps connection alive)
 			if strings.HasPrefix(resp.Header.Get("Content-Type"), "text/event-stream") {
 				writeMutex.Lock()
-				w.Write([]byte(": keepalive\n\n"))
+				_, err := w.Write([]byte(": keepalive\n\n"))
+				if err != nil {
+					return err
+				}
+				// Extend the deadline to avoid closures by the multiplexer.
+				stream.SetDeadline(time.Now().Add(30 * time.Second))
 				flusher.Flush()
 				writeMutex.Unlock()
 			}
