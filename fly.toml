@@ -20,6 +20,9 @@ primary_region = 'sea'
   force_https = true
   processes = ['app']
 
+  [http_service.http_options]
+    idle_timeout = 600
+
 [[services]]
   protocol = 'tcp'
   internal_port = 8080
