@@ -29,15 +29,13 @@ type TunnelClient struct {
 	Bearer   string
 }
 
-func NewTunnelClient(serverAddr, localAddr, apiKey string) (*TunnelClient, error) {
-	// Try to load existing config
-	config, err := loadTunnelConfig()
+func NewTunnelClient(serverAddr, localAddr, apiKey string, clientConfig types.TunnelClientConfig) (*TunnelClient, error) {
+	tunnelConfig, err := loadTunnelConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load tunnel config: %w", err)
 	}
 
-	// If no config exists, create new one
-	if config == nil {
+	if tunnelConfig == nil {
 		bearer, err := auth.GenerateString(20)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate bearer token: %w", err)
@@ -48,23 +46,23 @@ func NewTunnelClient(serverAddr, localAddr, apiKey string) (*TunnelClient, error
 			return nil, fmt.Errorf("failed to generate tunnel ID: %w", err)
 		}
 
-		// Some clients automatically convert to lowercase.
 		id = strings.ToLower(id)
 
-		config = &types.TunnelConfig{
+		tunnelConfig = &types.TunnelConfig{
 			TunnelID: id,
 			Bearer:   bearer,
 		}
 
-		// Persist the new config
-		if err := saveTunnelConfig(config); err != nil {
-			return nil, fmt.Errorf("failed to save tunnel config: %w", err)
+		if clientConfig.PersistConfig {
+			if err := saveTunnelConfig(tunnelConfig); err != nil {
+				return nil, fmt.Errorf("failed to save tunnel config: %w", err)
+			}
 		}
 	}
 
 	return &TunnelClient{
-		Bearer:   config.Bearer,
-		TunnelID: config.TunnelID,
+		Bearer:   tunnelConfig.Bearer,
+		TunnelID: tunnelConfig.TunnelID,
 
 		serverAddr: serverAddr,
 		localAddr:  localAddr,

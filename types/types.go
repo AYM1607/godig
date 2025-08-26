@@ -10,3 +10,7 @@ type TunnelConfig struct {
 	TunnelID string `yaml:"tunnel_id"`
 	Bearer   string `yaml:"bearer"`
 }
+
+type TunnelClientConfig struct {
+	PersistConfig bool
+}

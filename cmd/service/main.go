@@ -7,12 +7,14 @@ import (
 
 	"github.com/AYM1607/godig/pkg/auth"
 	"github.com/AYM1607/godig/pkg/tunnel"
+	"github.com/AYM1607/godig/types"
 )
 
 func main() {
 	var (
-		serverAddr = flag.String("server", "localhost:8080", "Tunnel server address")
-		localAddr  = flag.String("local", "localhost:3000", "Local service address")
+		serverAddr    = flag.String("server", "localhost:8080", "Tunnel server address")
+		localAddr     = flag.String("local", "localhost:3000", "Local service address")
+		persistConfig = flag.Bool("persist-config", false, "Persist tunnel configuration to file")
 	)
 	flag.Parse()
 
@@ -21,7 +23,11 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	client, err := tunnel.NewTunnelClient(*serverAddr, *localAddr, key)
+	clientConfig := types.TunnelClientConfig{
+		PersistConfig: *persistConfig,
+	}
+
+	client, err := tunnel.NewTunnelClient(*serverAddr, *localAddr, key, clientConfig)
 	if err != nil {
 		log.Fatalln("Failed to create tunnel client:", err)
 	}
