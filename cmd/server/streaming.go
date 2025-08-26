@@ -70,7 +70,7 @@ func (ts *TunnelServer) handleStreamingResponse(w http.ResponseWriter, resp *htt
 					return err
 				}
 				// Extend the deadline to avoid closures by the multiplexer.
-				stream.SetDeadline(time.Now().Add(30 * time.Second))
+				stream.SetDeadline(time.Now().Add(60 * time.Second))
 				flusher.Flush()
 				writeMutex.Unlock()
 			}
