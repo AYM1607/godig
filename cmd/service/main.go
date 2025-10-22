@@ -9,24 +9,54 @@ import (
 
 	"github.com/mdp/qrterminal"
 
-	"github.com/AYM1607/godig/pkg/auth"
+	"github.com/AYM1607/godig/pkg/config"
 	"github.com/AYM1607/godig/pkg/tunnel"
 	"github.com/AYM1607/godig/types"
 )
 
 func main() {
+	// Check for config subcommand.
+	if len(os.Args) > 1 && os.Args[1] == "config" {
+		handleConfigCommand()
+		return
+	}
+
 	var (
-		serverAddr    = flag.String("server", "godig.xyz:8080", "Tunnel server address")
-		localAddr     = flag.String("local", "localhost:3000", "Local service address")
-		persistConfig = flag.Bool("persist-config", false, "Persist tunnel configuration to file")
-		generateQR    = flag.Bool("generate-qr", false, "generate qr code")
-		disableAuth   = flag.Bool("disable-auth", false, "Disable bearer token authentication (insecure)")
+		serverAddrFlag = flag.String("server", "", "Tunnel server address")
+		apiKeyFlag     = flag.String("api-key", "", "API key for server authentication")
+		localAddr      = flag.String("local", "localhost:3000", "Local service address")
+		persistConfig  = flag.Bool("persist-config", false, "Persist tunnel configuration to file")
+		generateQR     = flag.Bool("generate-qr", false, "generate qr code")
+		disableAuth    = flag.Bool("disable-auth", false, "Disable bearer token authentication (insecure)")
 	)
 	flag.Parse()
 
-	key, err := auth.GetServerKey()
+	// Load global config.
+	globalConfig, err := config.LoadGlobalConfig()
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalf("Failed to load global config: %v\n", err)
+	}
+
+	// Resolve API key with priority: CLI flag > env var > global config.
+	var apiKey string
+	if *apiKeyFlag != "" {
+		apiKey = *apiKeyFlag
+	} else if envKey := os.Getenv("GODIG_API_KEY"); envKey != "" {
+		apiKey = envKey
+	} else if globalConfig.APIKey != "" {
+		apiKey = globalConfig.APIKey
+	} else {
+		log.Fatalln("API key must be provided via --api-key flag, GODIG_API_KEY environment variable, or global config")
+	}
+
+	// Resolve server address with priority: CLI flag > env var > global config > default.
+	serverAddr := "godig.xyz:8080"
+	if *serverAddrFlag != "" {
+		serverAddr = *serverAddrFlag
+	} else if envServer := os.Getenv("GODIG_SERVER"); envServer != "" {
+		serverAddr = envServer
+	} else if globalConfig.Server != "" {
+		serverAddr = globalConfig.Server
 	}
 
 	clientConfig := types.TunnelClientConfig{
@@ -34,7 +64,7 @@ func main() {
 		DisableAuth:   *disableAuth,
 	}
 
-	client, err := tunnel.NewTunnelClient(*serverAddr, *localAddr, key, clientConfig)
+	client, err := tunnel.NewTunnelClient(serverAddr, *localAddr, apiKey, clientConfig)
 	if err != nil {
 		log.Fatalln("Failed to create tunnel client:", err)
 	}
@@ -47,7 +77,7 @@ func main() {
 		log.Printf("Authentication: DISABLED (tunnel is publicly accessible)")
 	}
 	log.Printf("Local service: %s", *localAddr)
-	log.Printf("Server: %s", *serverAddr)
+	log.Printf("Server: %s", serverAddr)
 
 	if *generateQR {
 		bearerStr := ""
