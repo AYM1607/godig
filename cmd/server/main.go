@@ -29,7 +29,7 @@ type ClientSession struct {
 	ID      string
 	Session *yamux.Session
 	Conn    net.Conn
-	Bearer  string
+	Bearer  *string
 }
 
 func main() {
@@ -96,13 +96,12 @@ func (ts *TunnelServer) handleTunnelConnection(conn net.Conn) {
 		return
 	}
 
-	// TODO: Validate minimum security.
-	if handshake.Bearer == "" {
-		log.Printf("Invalid bearer in handshake")
-		return
+	authMode := "authenticated"
+	if handshake.Bearer == nil {
+		authMode = "public (no auth)"
 	}
 
-	log.Printf("Client connecting with tunnel ID: %s", handshake.TunnelID)
+	log.Printf("Client connecting with tunnel ID: %s (%s)", handshake.TunnelID, authMode)
 
 	// Send acknowledgment
 	response := map[string]string{"status": "ok"}
@@ -164,10 +163,13 @@ func (ts *TunnelServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token := getBearerToken(r)
-	if token != client.Bearer {
-		http.Error(w, "Auth failed", http.StatusBadGateway)
-		return
+	// Only validate bearer token if auth is enabled for this tunnel
+	if client.Bearer != nil {
+		token := getBearerToken(r)
+		if token != *client.Bearer {
+			http.Error(w, "Auth failed", http.StatusUnauthorized)
+			return
+		}
 	}
 
 	stream, err := client.Session.Open()

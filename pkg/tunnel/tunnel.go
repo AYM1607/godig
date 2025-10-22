@@ -26,7 +26,7 @@ type TunnelClient struct {
 	conn       net.Conn
 
 	TunnelID string
-	Bearer   string
+	Bearer   *string
 }
 
 func NewTunnelClient(serverAddr, localAddr, apiKey string, clientConfig types.TunnelClientConfig) (*TunnelClient, error) {
@@ -36,9 +36,13 @@ func NewTunnelClient(serverAddr, localAddr, apiKey string, clientConfig types.Tu
 	}
 
 	if tunnelConfig == nil {
-		bearer, err := auth.GenerateString(20)
-		if err != nil {
-			return nil, fmt.Errorf("failed to generate bearer token: %w", err)
+		var bearer *string
+		if !clientConfig.DisableAuth {
+			bearerStr, err := auth.GenerateString(20)
+			if err != nil {
+				return nil, fmt.Errorf("failed to generate bearer token: %w", err)
+			}
+			bearer = &bearerStr
 		}
 
 		id, err := auth.GenerateString(5)
@@ -169,7 +173,7 @@ func (tc *TunnelClient) connect(hm types.HandshakeMessage) error {
 	tc.conn = conn
 	tc.session = session
 
-	log.Printf("Connected to tunnel server. Public URL: http://%s.%s", tc.TunnelID, tc.serverAddr)
+	log.Printf("Connected to tunnel server. Public URL: https://%s.%s", tc.TunnelID, tc.serverAddr)
 	return nil
 }
 
