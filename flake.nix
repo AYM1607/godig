@@ -1,5 +1,5 @@
 {
-  description = "Go dev shell";
+  description = "Godig tunneling service flake";
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     systems.url = "github:nix-systems/default";
@@ -15,8 +15,16 @@
       system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+        godig-server = pkgs.callPackage ./nix/godig-server.nix { };
+        godig-service = pkgs.callPackage ./nix/godig-service.nix { };
       in
       {
+        packages = {
+          default = godig-service;
+          server = godig-server;
+          service = godig-service;
+        };
+
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
             go
